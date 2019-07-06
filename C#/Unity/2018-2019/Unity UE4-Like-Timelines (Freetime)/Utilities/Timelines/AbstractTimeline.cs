@@ -1,4 +1,4 @@
-﻿// Created by Jesse J. van Vliet - Copyright 2019 - GPLv3 Licensed
+﻿// Created by Jesse J. van Vliet - Copyright 2019
 
 using System;
 using System.Collections;

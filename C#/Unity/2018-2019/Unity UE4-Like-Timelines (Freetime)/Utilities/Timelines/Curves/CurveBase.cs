@@ -1,8 +1,6 @@
+// Created by Jesse J. van Vliet - Copyright 2019
 
-using System;
-using System.Collections.Generic;
-
-[Serializable]
+[System.Serializable]
 public abstract class CurveBase
 {
     private int curveCount;

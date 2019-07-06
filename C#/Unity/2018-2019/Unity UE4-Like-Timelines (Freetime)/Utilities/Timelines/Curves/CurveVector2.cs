@@ -1,3 +1,5 @@
+// Created by Jesse J. van Vliet - Copyright 2019
+
 using System;
 using UnityEngine;
 
