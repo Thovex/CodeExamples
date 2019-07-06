@@ -5,51 +5,29 @@ using UnityEngine;
 
 public class ScaleTest : MonoBehaviour
 {
-    public CurveVector3 curve;
+    public CurveVector3 curveScale;
+    public CurveFloat curveColor;
 
-    private TimelineVector3 _timelineRef;
-
-    private void OnEnable()
+    private IEnumerator Start()
     {
-        _timelineRef.OnTimelinePlay += LogPlay;
-        _timelineRef.OnTimelineUpdate += LogUpdate;
-        _timelineRef.OnTimelineFinish += LogFinish;
-    }
 
-    private void OnDisable()
-    {
-        _timelineRef.OnTimelinePlay -= LogPlay;
-        _timelineRef.OnTimelineUpdate -= LogUpdate;
-        _timelineRef.OnTimelineFinish -= LogFinish;
-    }
+        TimelineFloat timelineColor = new TimelineFloat(this, curveColor);
+        timelineColor.PlayFromStart((alpha) => SetColor(ref alpha));
 
-    void Awake()
-    {
-        _timelineRef = new TimelineVector3(this, curve);
-        _timelineRef.PlayTimeline((size) => SetScale(ref size));
+        yield return new WaitForSeconds(0.9F);
+
+        timelineColor.Pause();
+
+        TimelineVector3 timelineScale = new TimelineVector3(this, curveScale);
+        timelineScale.PlayFromStart((size) => SetScale(ref size));
+
+        yield return new WaitForSeconds(1.0F);
+
+        timelineColor.Resume();
 
     }
 
-    void SetScale(ref Vector3 size)
-    {
-        transform.localScale = size;
-    }
+    private void SetScale(ref Vector3 size) => transform.localScale = Vector3.one / 2 + size;
 
-    void LogPlay()
-    {
-        Debug.Log("Timeline: play!");
-
-    }
-
-    void LogUpdate(float time)
-    {
-        Debug.Log("Timeline updated: " + time);
-
-    }
-
-    void LogFinish()
-    {
-        Debug.Log("Timeline: finished!");
-
-    }
+    private void SetColor(ref float alpha) => transform.GetComponent<MeshRenderer>().material.color = Color.Lerp(Color.white, Color.red, alpha);
 }

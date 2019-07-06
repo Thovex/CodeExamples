@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TimelineVector3 : Timeline<Action<Vector3>>
+public class TimelineVector3 : AbstractTimeline<Action<Vector3>>
 {
     public TimelineVector3() { }
     public TimelineVector3(MonoBehaviour worldContext, float endTime)

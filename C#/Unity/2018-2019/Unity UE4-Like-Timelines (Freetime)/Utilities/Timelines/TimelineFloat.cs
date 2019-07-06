@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TimelineFloat : Timeline<Action<float>>
+public class TimelineFloat : AbstractTimeline<Action<float>>
 {
     public TimelineFloat() { }
     public TimelineFloat(MonoBehaviour worldContext, float endTime)
@@ -19,13 +19,7 @@ public class TimelineFloat : Timeline<Action<float>>
         this.curve = floatCurve;
         this.endTime = floatCurve.GetLength();
     }
-
-    ~TimelineFloat()
-    {
-        if (active) InternalFinishTimeline();
-    }
-
-
+    
     public override void TimelineFunctionality(List<Action<float>> Methods)
     {
         CurveFloat curveFloat = (CurveFloat)curve;
