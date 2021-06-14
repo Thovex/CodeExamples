@@ -1,20 +1,30 @@
-﻿using System.Collections;
-using Sirenix.OdinInspector;
-using BaerAndHoggo.Colors;
+﻿using BaerAndHoggo.Colors;
 using UnityEngine;
 
 namespace BaerAndHoggo.Gameplay.Cards
 {
     public static class RarityDB
     {
+        public static ColorTheme CommonTheme;
+        public static ColorTheme UncommonTheme;
+        public static ColorTheme RareTheme;
+        public static ColorTheme EpicTheme;
+        public static ColorTheme LegendaryTheme;
+
+        public static Sprite CommonEmblem;
+        public static Sprite UncommonEmblem;
+        public static Sprite RareEmblem;
+        public static Sprite EpicEmblem;
+        public static Sprite LegendaryEmblem;
 
         static RarityDB()
         {
-            RarityColorData[] colors = Resources.LoadAll<RarityColorData>("Colors/Rarities");
+            var colors = Resources.LoadAll<RarityColorData>("Colors/Rarities");
 
-            foreach (RarityColorData colorData in colors)
+            foreach (var colorData in colors)
             {
-                GetColorThemeByRarity(colorData.GetRarirty()) = new ColorTheme(colorData.GetDictionary());
+                GetColorThemeByRarity(colorData.GetRarity()) = new ColorTheme(colorData.GetDictionary());
+                GetEmblemByRarity(colorData.GetRarity()) = colorData.GetEmblem();
             }
 
             Debug.Log("Created Rarity DB colors");
@@ -25,37 +35,61 @@ namespace BaerAndHoggo.Gameplay.Cards
             switch (rarity)
             {
                 case Rarity.Common:
-                    {
-                        return ref COMMON_THEME;
-                    }
+                {
+                    return ref CommonTheme;
+                }
                 case Rarity.Uncommon:
-                    {
-                        return ref UNCOMMON_THEME;
-                    }
+                {
+                    return ref UncommonTheme;
+                }
                 case Rarity.Rare:
-                    {
-                        return ref RARE_THEME;
-                    }
+                {
+                    return ref RareTheme;
+                }
                 case Rarity.Epic:
-                    {
-                        return ref EPIC_THEME;
-                    }
+                {
+                    return ref EpicTheme;
+                }
                 case Rarity.Legendary:
-                    {
-                        return ref LEGENDARY_THEME;
-                    }
+                {
+                    return ref LegendaryTheme;
+                }
                 default:
-                    {
-                        return ref COMMON_THEME;
-                    }
+                {
+                    return ref CommonTheme;
+                }
             }
         }
 
-        public static ColorTheme COMMON_THEME = new ColorTheme();
-        public static ColorTheme UNCOMMON_THEME = new ColorTheme();
-        public static ColorTheme RARE_THEME = new ColorTheme();
-        public static ColorTheme EPIC_THEME = new ColorTheme();
-        public static ColorTheme LEGENDARY_THEME = new ColorTheme();
-
+        public static ref Sprite GetEmblemByRarity(Rarity rarity)
+        {
+            switch (rarity)
+            {
+                case Rarity.Common:
+                {
+                    return ref CommonEmblem;
+                }
+                case Rarity.Uncommon:
+                {
+                    return ref UncommonEmblem;
+                }
+                case Rarity.Rare:
+                {
+                    return ref RareEmblem;
+                }
+                case Rarity.Epic:
+                {
+                    return ref EpicEmblem;
+                }
+                case Rarity.Legendary:
+                {
+                    return ref LegendaryEmblem;
+                }
+                default:
+                {
+                    return ref CommonEmblem;
+                }
+            }
+        }
     }
 }

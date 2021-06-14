@@ -1,88 +1,84 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using UnityEngine;
-using BaerAndHoggo.Utilities;
+using BaerAndHoggo.Gameplay.Inventories;
 using Sirenix.OdinInspector;
+using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace BaerAndHoggo.Gameplay.Cards
 {
-    public class CardDB : Singleton<CardDB>
+    public class CardDB : DB<Card, CardIO[]>
     {
-        [SerializeField] [ReadOnly] private Dictionary<long, Card> cardDB = new Dictionary<long, Card>();
-
-        private void Awake()
-        {
-            // Grab cards we have defined in the Resources/Cards folder.
-            Card[] cards = Resources.LoadAll<Card>("Cards");
-
-            foreach (Card card in cards)
-            {
-                // Add an instantiated clone from the existing card. 
-                // We do not ever want to make changes on the files by programming here.
-                cardDB.Add(card.Id, Instantiate(card));
-            }
-        }
+        [SerializeField] [Required] private GameObject cardStackPrefab;
+        [SerializeField] [Required] private GameObject masterCardPrefab;
+        public new static CardDB Instance => (CardDB)GetInstance();
+        
+        public GameObject GetMasterCardPrefab()=>masterCardPrefab;
+        public GameObject GetCardStackPrefab()=>cardStackPrefab;
 
         public bool GetRandomCard(out Card card)
         {
             card = null;
-
-            if (cardDB.Count == 0)
+            
+            if (db.Count == 0)
             {
-                new System.Exception($"CardDB is Empty.");
-                return false;
+                throw new System.Exception("CardDB is Empty.");
             }
 
-            card = Instantiate(cardDB.ElementAt(Random.Range(0, cardDB.Count)).Value);
+            card = Instantiate(db.ElementAt(Random.Range(0, db.Count)).Value);
 
             return true;
         }
 
-        // Returns a nullptr on false.
-        public bool GetCard(long id, out Card card)
+        protected override void InitializeDB()
         {
-            card = null;
-
-            // If DB contains this id.
-            if (cardDB.ContainsKey(id))
-            {
-                // Create an instantiated clone from this card to give to the player.
-                // We do not want the player to directly adjust the "main card" where we clone from.
-                // However in future we can "permanently" upgrade the cards.
-                card = Instantiate(cardDB[id]);
-                return true;
-            }
-
-            new System.Exception($"Invalid card requested of id {id}. But not available in CardDB.");
-            return false;
+            IsInitialized = true;
+        }
+        
+        protected override void StartLoad(IO.SaveData loadData)
+        {
+            OnLoad_Implementation(loadData.CardIO);
         }
 
-        public long GetIdFromName(string Name)
+        public override CardIO[] OnSave_Implementation()
         {
-            foreach (var card in cardDB)
+            var data = new CardIO[db.Count];
+            
+            for (int i = 0; i < db.Count; i++)
             {
-                if (card.Value.Name == Name)
+                var card = db.ElementAt(i).Value;
+                
+                switch (card.type)
                 {
-                    return card.Value.Id;
+                    case Type.Minion:data[i] = ((CardMinion) card).OnSave_Implementation(); break;
+                    case Type.Spell:data[i] = ((CardSpell) card).OnSave_Implementation(); break;
                 }
             }
-
-            Debug.LogError($"GetIdFromName Failed! No such Id found for Name {Name}");
-            return -1;
+            
+            return data;
         }
 
-        public string GetNameFromId(long Id)
+        public override void OnLoad_Implementation(CardIO[] loadData)
         {
-            foreach (var card in cardDB)
+            if (loadData == null) return; 
+            if (loadData.Length == 0) return;
+            
+            // Foreach saved building IO, we go through the IDs and load with the new data.
+            foreach (var cardIO in loadData)
             {
-                if (card.Value.Id == Id)
+                var card = db[cardIO.Id];
+
+                switch (card.type)
                 {
-                    return card.Value.Name;
+                    case Type.Minion:
+                        ((CardMinion)card).OnLoad_Implementation((CardMinionIO)cardIO); 
+                        break;
+                    case Type.Spell: 
+                        ((CardSpell)card).OnLoad_Implementation((CardSpellIO)cardIO); 
+                        break;
                 }
             }
-
-            Debug.LogError($"GetNameFromId Failed! No such Name found for Id {Id}");
-            return "NULL";
+            
         }
     }
 }

@@ -1,61 +1,59 @@
-using UnityEngine;
 using Sirenix.OdinInspector;
+using UnityEngine;
 
 namespace BaerAndHoggo.Utilities
 {
-
     public class Singleton<T> : SerializedMonoBehaviour where T : SerializedMonoBehaviour
     {
-        private static bool m_ShuttingDown = false;
-        private static object m_Lock = new object();
-        private static T m_Instance;
+        private static bool _mShuttingDown;
+        private static readonly object MLock = new object();
+        private static T _mInstance;
 
-        public static T Instance
+        public static T Instance => GetInstance();
+
+        public static T GetInstance()
         {
-            get
+            if (_mShuttingDown)
             {
-                if (m_ShuttingDown)
-                {
-                    Debug.LogWarning("[Singleton] Instance '" + typeof(T) +
-                        "' already destroyed. Returning null.");
-                    return null;
-                }
+                Debug.LogWarning("[Singleton] Instance '" + typeof(T) +
+                                 "' already destroyed. Returning null.");
+                return null;
+            }
 
-                lock (m_Lock)
+            lock (MLock)
+            {
+                if (_mInstance == null)
                 {
-                    if (m_Instance == null)
+                    // Search for existing instance.
+                    _mInstance = (T) FindObjectOfType(typeof(T));
+
+                    // Create new instance if one doesn't already exist.
+                    if (_mInstance == null)
                     {
-                        // Search for existing instance.
-                        m_Instance = (T)FindObjectOfType(typeof(T));
+                        // Need to create a new GameObject to attach the singleton to.
+                        var singletonObject = new GameObject();
+                        _mInstance = singletonObject.AddComponent<T>();
+                        singletonObject.name = typeof(T) + " (Singleton)";
 
-                        // Create new instance if one doesn't already exist.
-                        if (m_Instance == null)
-                        {
-                            // Need to create a new GameObject to attach the singleton to.
-                            var singletonObject = new GameObject();
-                            m_Instance = singletonObject.AddComponent<T>();
-                            singletonObject.name = typeof(T).ToString() + " (Singleton)";
-
-                            // Make instance persistent.
-                            DontDestroyOnLoad(singletonObject);
-                        }
+                        // Make instance persistent.
+                        DontDestroyOnLoad(singletonObject);
                     }
-
-                    return m_Instance;
                 }
+
+                return _mInstance;
             }
         }
 
 
         private void OnApplicationQuit()
         {
-            m_ShuttingDown = true;
+            _mShuttingDown = true;
         }
 
 
         private void OnDestroy()
         {
-            m_ShuttingDown = true;
+            _mShuttingDown = true;
         }
     }
 }

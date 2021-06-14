@@ -1,69 +1,102 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using BaerAndHoggo.SaveData;
 using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace BaerAndHoggo.Gameplay.Cards
 {
-    public enum Type { None, Minion, Spell };
-    public enum Rarity { Common, Uncommon, Rare, Epic, Legendary };
-    public enum Category { None, Orcs };
-    public enum Buffs { DoubleAttack, DoubleDamage, HealthRegen }
-
-    [Serializable]
-    public abstract class CardSaveData
+    public enum Type
     {
-        public long Id { get; set; }
-        public string Name { get; set; }
-        public int Tier { get; set; }
-        public Type Type { get; set; }
-        public Category Category { get; set; }
+        Minion,
+        Spell,
+        Captain,
     }
 
-    [System.Serializable]
-    public abstract class Card : SerializedScriptableObject
+    public enum Rarity
     {
+        Common,
+        Uncommon,
+        Rare,
+        Epic,
+        Legendary
+    }
+
+    public enum Category
+    {
+        None,
+        Orcs,
+        DarkElf,
+        Elf,
+        Rat,
+        Hedgehog,
+        Vampire
+    }
+
+    public enum Buffs
+    {
+        DoubleAttack,
+        DoubleDamage,
+        HealthRegen
+    }
+
+    [Serializable]
+    public abstract class Card : SerializedScriptableObject, IIdentifiable
+    {
+
         [Title("Required", "Id is required to be unique.")]
-        public long Id = -1;
-        public string Name = "Unnamed Base Card";
-        public int Tier = -1;
+        [ReadOnly] public long id = -1;
+        public string cardName = "Unnamed Base Card";
 
-        [Title("Gameplay")]
-        [GUIColor("GetRarityColor")] public Rarity Rarity = Rarity.Common;
-        public Type Type = Type.None;
-        public Category Category = Category.None;
+        public Category category = Category.None;
+        public Type type = Type.Minion;
+        
+        [Title("Art")] 
+        [PreviewField] public Sprite portrait;
 
-        [Title("Buffs & Debuffs", "Only classes inherited from Option")]
-        public List<CardBuff> Buffs = new List<CardBuff>();
-        public List<CardDebuff> Debuffs = new List<CardDebuff>();
-
-        [Title("Upgrades", "Only use when you want this to be an upgradeable Card.")]
-        public bool CanUpgrade = false;
-        [ShowIf("CanUpgrade", true)] public Dictionary<Card, int> UpgradeRequirements = new Dictionary<Card, int>();
-        [ShowIf("CanUpgrade", true)] public Card UpgradeBecomes = null;
-
-        [Title("Art")]
-        [PreviewField] public Sprite Portrait;
+        [Title("Gameplay")] 
+        [GUIColor("GetRarityColor")] public Rarity rarity = Rarity.Common;
+        public int manaCost = -1;
+        
+        public long GetID() => id;
+        public string GetName() => cardName;
+        
+        public delegate void UpdateInfo();
+        public event UpdateInfo OnUpdate;
+        
+        public void CallUpdate()
+        {
+            OnUpdate?.Invoke();
+        }
 
 
 #if UNITY_EDITOR
         protected virtual void OnValidate()
         {
+            if (id == -1)
+            {
+                var cards = Resources.LoadAll<Card>("Cards");
+                id = cards.Max(c => c.id)+1;
+            }
+            
             try
             {
-                string assetPath = AssetDatabase.GetAssetPath(this.GetInstanceID());
-                AssetDatabase.RenameAsset(assetPath, $"{this.Id}-{this.Name}");
+                var assetPath = AssetDatabase.GetAssetPath(GetInstanceID());
+                AssetDatabase.RenameAsset(assetPath, $"{id}-{cardName}");
                 AssetDatabase.SaveAssets();
             }
-            catch (Exception) { }
-
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
         private Color GetRarityColor()
         {
-            return RarityDB.GetColorThemeByRarity(this.Rarity).General;
+            return RarityDB.GetColorThemeByRarity(rarity).General;
         }
 #endif
     }

@@ -1,12 +1,15 @@
 using UnityEngine;
 
-public static partial class Utility
+namespace BaerAndHoggo.Utilities
 {
-    public static Color ToColor(int HexVal)
+    public static partial class Utility
     {
-        byte R = (byte)((HexVal >> 16) & 0xFF);
-        byte G = (byte)((HexVal >> 8) & 0xFF);
-        byte B = (byte)((HexVal) & 0xFF);
-        return new Color(R, G, B, 255);
+        public static Color ToColor(int hexVal)
+        {
+            var r = (byte) ((hexVal >> 16) & 0xFF);
+            var g = (byte) ((hexVal >> 8) & 0xFF);
+            var b = (byte) (hexVal & 0xFF);
+            return new Color(r, g, b, 255);
+        }
     }
 }

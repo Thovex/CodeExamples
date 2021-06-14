@@ -1,66 +1,72 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
-    [Title("Audio References")]
-    [SerializeField] [Required] private AudioSource audioSource;
+    [Title("Button Sprites")] [SerializeField] [Required]
+    private Image audioImage;
+
     [SerializeField] [Required] private AudioMixer audioMixer;
 
-    [Title("URL redirections")]
-    [SerializeField] private string likeURL = "AndroidStore/AppleStore?URL";
-    [SerializeField] private string guideURL = "https://www.jesse.vanvliet.com/idlecards/guide.pdf";
-    [SerializeField] private string websiteURL = "https://www.jessevanvliet.com/";
-    [SerializeField] private string redditURL = "https://www.reddit.com/r/IdleCards/";
+    [Title("Audio References")] [SerializeField] [Required]
+    private AudioSource audioSource;
 
-    [Title("Button Sprites")]
-    [SerializeField] [Required] private Image audioImage;
-    [PreviewField] [SerializeField] private Sprite unmuteSprite;
+    private Coroutine _coroutine;
+     [SerializeField] private string guideUrl = "https://www.jesse.vanvliet.com/idlecards/guide.pdf";
+
+     [Title("URL redirections")] [SerializeField]
+    private string likeUrl = "AndroidStore/AppleStore?URL";
+
     [PreviewField] [SerializeField] private Sprite muteSprite;
-
-    private Coroutine coroutine;
+     [SerializeField] private string redditUrl = "https://www.reddit.com/r/IdleCards/";
+    [PreviewField] [SerializeField] private Sprite unmuteSprite;
+     [SerializeField] private string websiteUrl = "https://www.jessevanvliet.com/";
 
     private void Start()
     {
-
-        float startTime = Random.Range(0, audioSource.clip.length);
-        audioSource.time = startTime;
-        LerpBackgroundMusic(0);
-        audioSource.Play();
+        if (audioSource.clip)
+        {
+            var startTime = Random.Range(0, audioSource.clip.length);
+            audioSource.time = startTime;
+            LerpBackgroundMusic(0);
+            audioSource.Play();
+        }
     }
 
     private IEnumerator IntroduceMusic(float to, bool fadeBack = false)
     {
-        audioMixer.GetFloat("Volume", out float lerpValue);
+        audioMixer.GetFloat("Volume", out var lerpValue);
 
         while (!Mathf.Approximately(lerpValue, to))
         {
-            lerpValue = Mathf.Lerp(lerpValue, to, Time.deltaTime * ((fadeBack) ? 10 : 1));
+            lerpValue = Mathf.Lerp(lerpValue, to, Time.deltaTime * (fadeBack ? 10 : 1));
             audioMixer.SetFloat("Volume", lerpValue);
             yield return new WaitForEndOfFrame();
         }
 
         if (fadeBack)
-        {
             while (!Mathf.Approximately(lerpValue, 0))
             {
                 lerpValue = Mathf.Lerp(lerpValue, 0, Time.deltaTime * 5);
                 audioMixer.SetFloat("Volume", lerpValue);
                 yield return new WaitForEndOfFrame();
             }
-        }
     }
 
     // Buttons can only take 1 input
-    public void LerpBackgroundMusicFade(float to) => LerpBackgroundMusic(to, true);
+    public void LerpBackgroundMusicFade(float to)
+    {
+        LerpBackgroundMusic(to, true);
+    }
+
     public void LerpBackgroundMusic(float to, bool fadeBack = false)
     {
-        if (coroutine != null) StopCoroutine(coroutine);
-        coroutine = StartCoroutine(IntroduceMusic(to, fadeBack));
+        if (_coroutine != null) StopCoroutine(_coroutine);
+        _coroutine = StartCoroutine(IntroduceMusic(to, fadeBack));
     }
 
     public void CloseApplication()
@@ -83,9 +89,28 @@ public class MainMenu : MonoBehaviour
         }
     }
 
-    public void OpenLikeURL() => Application.OpenURL(likeURL);
-    public void OpenGuideURL() => Application.OpenURL(guideURL);
-    public void OpenWebsiteURL() => Application.OpenURL(websiteURL);
-    public void OpenRedditURL() => Application.OpenURL(redditURL);
-    public void Disable() => gameObject.SetActive(false);
+    public void OpenLikeUrl()
+    {
+        Application.OpenURL(likeUrl);
+    }
+
+    public void OpenGuideUrl()
+    {
+        Application.OpenURL(guideUrl);
+    }
+
+    public void OpenWebsiteUrl()
+    {
+        Application.OpenURL(websiteUrl);
+    }
+
+    public void OpenRedditUrl()
+    {
+        Application.OpenURL(redditUrl);
+    }
+
+    public void Disable()
+    {
+        gameObject.SetActive(false);
+    }
 }

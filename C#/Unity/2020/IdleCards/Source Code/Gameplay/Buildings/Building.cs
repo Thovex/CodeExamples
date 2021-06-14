@@ -1,87 +1,133 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-
+using System.Linq;
+using BaerAndHoggo.SaveData;
+using BaerAndHoggo.Utilities;
+using Gameplay.Currency;
+using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
 
-using BaerAndHoggo.Gameplay.Time;
-using BaerAndHoggo.Utilities;
-
-using Sirenix.OdinInspector;
-using System.Linq;
-using BaerAndHoggo.SaveData;
-
 namespace BaerAndHoggo.Gameplay.Buildings
 {
-
-    [Serializable]
-    public class BuildingSaveData
+    public enum BuildingType
     {
-        public long Id { get; set; }
-        public Dictionary<BuildingActionType, int> TimeInSecondsPerAction { get; set; }
-
-        // Don't forget to add new properties we need to save to the To & From Save Data functionality.
+        Fortress,
+        Blacksmith
     }
 
-    [CreateAssetMenu(fileName = "Building", menuName = "Building")]
+    public enum BuildingActionType
+    {
+        Null,
+        Cardpack,
+        Upgrade,
+        Repair,
+        Research,
+        Experiment
+    }
+
     [Serializable]
-    public class Building : SerializedScriptableObject, ISaveData<BuildingSaveData>
+    public abstract class Building : SerializedScriptableObject, 
+        ISaveData<BuildingIO>, 
+        IIdentifiable, 
+        ITimeEventCaller
     {
 
-        [Title("Required")]
-        public long Id = -1;
-        public string Name = "Unnamed Building";
+        [ReadOnly] public BuildingType buildingType;
+
+        [Title("Required")] 
+        [ReadOnly] public long id = -1;
+        public string buildingName = "Unnamed Building";
+
+        [Title("Art")] 
+        [PreviewField] public Sprite image;
+        public Color backgroundColor = Color.red;
 
         [Title("Gameplay")]
-        public Dictionary<BuildingActionType, int> TimeInSecondsPerAction = new Dictionary<BuildingActionType, int> {
-            {BuildingActionType.CardPack, int.MaxValue}, {BuildingActionType.Repair, int.MaxValue}, {BuildingActionType.Upgrade, int.MaxValue}};
+        public string description = "No description";
+        public Dictionary<BuildingActionType, double> timeInSecondsPerAction = new Dictionary<BuildingActionType, double>();
+        public long tier = 1;
+        public double constructionTime;
+        public int cost;
+        public Currencies currency;
 
-        [Title("Art")]
-        [PreviewField] public Sprite Image;
+        #region SaveGame
 
-        public void FromSaveData(BuildingSaveData loadData)
+        public BuildingIO OnSave_Implementation()
         {
-            if (this.Id == loadData.Id)
+            return new BuildingIO
             {
-                this.TimeInSecondsPerAction = loadData.TimeInSecondsPerAction;
-            }
+                Id = id,
+                Name = buildingName,
+                Tier = tier,
+                Cost = cost,
+                Currency = currency,
+                ConstructionTime = constructionTime,
+                TimeInSecondsPerAction = timeInSecondsPerAction,
+            };
         }
 
-        public BuildingSaveData ToSaveData()
+        public void OnLoad_Implementation(BuildingIO loadData)
         {
-            BuildingSaveData saveData = new BuildingSaveData();
-            saveData.Id = this.Id;
-            saveData.TimeInSecondsPerAction = this.TimeInSecondsPerAction;
-            return saveData;
+            id = loadData.Id;
+            buildingName = loadData.Name;
+            tier = loadData.Tier;
+            cost = loadData.Cost;
+            currency = loadData.Currency;
+            constructionTime = loadData.ConstructionTime;
+            timeInSecondsPerAction = loadData.TimeInSecondsPerAction;
+            
+            BuildingDB.Instance.GetBaseItem(id, out var baseBuilding);
+            image = baseBuilding.image;
         }
 
-#if UNITY_EDITOR
-        [Title("Tooling", "Small tools to help define and set coloring.")]
-        [SerializeField] [TextArea(0, 25)] [ReadOnly] private string ThatWouldBeTime;
+        #endregion SaveGame
 
+        #region IIdentifiable
+
+        public long GetID() => id;
+        public string GetName() => buildingName;
+
+        #endregion IIdentifiable
+        
+        #region ITimeEventCaller
+        public CallerEventType GetEventType() => CallerEventType.Building;
+        
+        #endregion ITimeEventCaller
+        
+#if UNITY_EDITOR
+
+        [Title("Tooling", "Small tools to help define and set coloring.")] [SerializeField] [TextArea(0, 25)] [ReadOnly]
+        public string thatWouldBeTime;
+        
         protected virtual void OnValidate()
         {
-
-            int[] secondsArray = TimeInSecondsPerAction.Values.ToArray();
-            BuildingActionType[] typesArray = TimeInSecondsPerAction.Keys.ToArray();
-
-            string[] secondTimersArray = new string[secondsArray.Length];
-
-            for (int i = 0; i < secondsArray.Length; i++)
+            if (id == -1)
             {
-                secondTimersArray[i] = $"{typesArray[i].ToString()}: {Utility.DefineTimer(secondsArray[i])}";
+                var buildings = Resources.LoadAll<Building>("Buildings");
+                id = buildings.Max(b => b.id)+1;
             }
+            
+            var secondsArray = timeInSecondsPerAction.Values.ToArray();
+            var typesArray = timeInSecondsPerAction.Keys.ToArray();
 
-            ThatWouldBeTime = String.Join(Environment.NewLine, secondTimersArray);
+            var secondTimersArray = new string[secondsArray.Length];
+
+            for (var i = 0; i < secondsArray.Length; i++)
+                secondTimersArray[i] = $"{typesArray[i].ToString()}: {Utility.DefineTimer(secondsArray[i])}";
+
+            thatWouldBeTime = string.Join(Environment.NewLine, secondTimersArray);
 
             try
             {
-                string assetPath = AssetDatabase.GetAssetPath(this.GetInstanceID());
-                AssetDatabase.RenameAsset(assetPath, $"{this.Id}-{this.Name}");
+                var assetPath = AssetDatabase.GetAssetPath(GetInstanceID());
+                AssetDatabase.RenameAsset(assetPath, $"{id}-{buildingName}");
                 AssetDatabase.SaveAssets();
             }
-            catch (Exception) { }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 #endif
     }

@@ -1,8 +1,8 @@
-using Sirenix.OdinInspector;
-using UnityEngine;
+using System;
 using System.Collections.Generic;
 using BaerAndHoggo.Gameplay.Cards;
-
+using Sirenix.OdinInspector;
+using UnityEngine;
 using static BaerAndHoggo.Colors.ColorTheme;
 
 namespace BaerAndHoggo.Colors
@@ -11,11 +11,13 @@ namespace BaerAndHoggo.Colors
     // [CreateAssetMenu(fileName = "New Rarity Color Data", menuName = "Colors/Rarity Color Data", order = 0)]
     public class RarityColorData : SerializedScriptableObject
     {
+        [Title("Color DataBase")] [SerializeField]
+        private Dictionary<Variation, Color> colors;
+
+        [SerializeField] private Sprite emblem;
+
         [Title("Rarity Color Structure", "Changeable only by editting the file manually.")]
         [GUIColor("GetRarityColor")] [ReadOnly] [SerializeField] private Rarity rarity;
-
-        [Title("Color DataBase")]
-        [SerializeField] private Dictionary<Variation, Color> colors;
 
         public RarityColorData()
         {
@@ -24,20 +26,20 @@ namespace BaerAndHoggo.Colors
 
         private void Initialize()
         {
-            this.colors = new Dictionary<Variation, Color>();
+            colors = new Dictionary<Variation, Color>();
 
-            foreach (Variation variation in (Variation[])System.Enum.GetValues(typeof(Variation)))
-            {
-                this.colors.Add(variation, new Color(0, 0, 0, 0));
-            }
+            foreach (var variation in (Variation[]) Enum.GetValues(typeof(Variation)))
+                colors.Add(variation, new Color(0, 0, 0, 0));
         }
 
         public Dictionary<Variation, Color> GetDictionary() => colors;
-        public Rarity GetRarirty() => rarity;
+        public Rarity GetRarity() => rarity;
+        public Sprite GetEmblem() => emblem;
+        
 
 #if UNITY_EDITOR
-        [Title("Tooling", "Small tools to help define and set coloring.")]
-        [SerializeField] private string hexConversion;
+        [Title("Tooling", "Small tools to help define and set coloring.")] [SerializeField]
+        private string hexConversion;
 
         [SerializeField] private Color colorResult;
 
@@ -45,10 +47,7 @@ namespace BaerAndHoggo.Colors
         [Button("Hex > Color", ButtonSizes.Small)]
         private void ConvertHex()
         {
-            if (!hexConversion.Contains("#"))
-            {
-                hexConversion = $"#{hexConversion}";
-            }
+            if (!hexConversion.Contains("#")) hexConversion = $"#{hexConversion}";
 
             ColorUtility.TryParseHtmlString(hexConversion, out var color);
             colorResult = color;
@@ -61,21 +60,20 @@ namespace BaerAndHoggo.Colors
             hexConversion = $"#{ColorUtility.ToHtmlStringRGB(colorResult)}";
         }
 
-        [BoxGroup("Apply"), HideLabel] [EnumToggleButtons] [SerializeField] private Variation applyToEnum;
+        [BoxGroup("Apply")] [HideLabel] [EnumToggleButtons] [SerializeField]
+        private Variation applyToEnum;
 
-        [BoxGroup("Apply"), HideLabel]
+        [BoxGroup("Apply")]
+        [HideLabel]
         [Button("Apply to Variation", ButtonSizes.Large)]
         private void ApplyToEnum()
         {
-            if (colors.ContainsKey(applyToEnum))
-            {
-                colors[applyToEnum] = colorResult;
-            }
+            if (colors.ContainsKey(applyToEnum)) colors[applyToEnum] = colorResult;
         }
 
         private Color GetRarityColor()
         {
-            return RarityDB.GetColorThemeByRarity(this.rarity).General;
+            return RarityDB.GetColorThemeByRarity(rarity).General;
         }
 
 #endif
